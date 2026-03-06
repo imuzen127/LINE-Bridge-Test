@@ -20,8 +20,8 @@ function doPost(e) {
     // 1. アプリから送られてきたデータ(予約一覧の配列)を取得
     var reservations = JSON.parse(e.postData.contents);
 
-    // 2. カレンダーを取得 (imuzen127@gmail.comに変更)
-    var cal = CalendarApp.getCalendarById('imuzen127@gmail.com');
+    // 2. カレンダーを取得 (imuzen8191@gmail.comに変更)
+    var cal = CalendarApp.getCalendarById('imuzen8191@gmail.com');
     if (!cal) {
       throw new Error("指定されたカレンダーにアクセスできません。共有設定などを確認してください。");
     }
@@ -97,29 +97,79 @@ function doPost(e) {
 // =========================================================================
 function doGet(e) {
   try {
-    var targetAccount = 'imuzen127@gmail.com';
+    var targetAccount = 'imuzen8191@gmail.com';
     var cal = CalendarApp.getCalendarById(targetAccount);
 
+    if (!cal) {
+      if (e && e.parameter && e.parameter.action === 'getBusySlots') {
+        return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "カレンダー取得不可" }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      return ContentService.createTextOutput("\n【エラー】カレンダー取得不可: 権限がない、またはアカウントが間違っています。\n");
+    }
+
+    // アプリからの空き状況確認APIリクエストの場合
+    if (e && e.parameter && e.parameter.action === 'getBusySlots') {
+      var startTime = new Date();
+      // 今日から1年後までの予定を取得
+      var endTime = new Date();
+      endTime.setFullYear(endTime.getFullYear() + 1);
+
+      var events = cal.getEvents(startTime, endTime);
+      var busySlots = [];
+
+      for (var i = 0; i < events.length; i++) {
+        var ev = events[i];
+        var desc = ev.getDescription() || "";
+
+        // このLINEアプリから登録したイベントはローカル側の配列と重複するため除外する
+        if (desc.indexOf("[LINE_APP_RES_ID:") !== -1) {
+          continue;
+        }
+
+        var isAllDay = ev.isAllDayEvent();
+        // startとendを定義
+        var evStart = ev.getStartTime();
+        var evEnd = ev.getEndTime();
+
+        // アプリ側と同じ YYYY-MM-DD 文字列を作るためのヘルパー
+        // ※ JST前提の簡易フォーマット
+        var yy = evStart.getFullYear();
+        var mm = ("0" + (evStart.getMonth() + 1)).slice(-2);
+        var dd = ("0" + evStart.getDate()).slice(-2);
+        var dateStr = yy + "-" + mm + "-" + dd;
+
+        var timeStr = ("0" + evStart.getHours()).slice(-2) + ":" + ("0" + evStart.getMinutes()).slice(-2);
+        var endTimeStr = ("0" + evEnd.getHours()).slice(-2) + ":" + ("0" + evEnd.getMinutes()).slice(-2);
+
+        busySlots.push({
+          date: dateStr,
+          isAllDay: isAllDay,
+          time: timeStr,
+          endTime: endTimeStr
+        });
+      }
+
+      return ContentService.createTextOutput(JSON.stringify({ status: "success", events: busySlots }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 単純にブラウザでアクセスされた時のデバッグ画面
     var output = "LINEアプリ連携 - デバッグ画面\n";
     output += "===========================\n";
     output += "実行アカウント: " + Session.getActiveUser().getEmail() + "\n";
     output += "対象カレンダー: " + targetAccount + "\n";
-
-    if (!cal) {
-      output += "\n【エラー】カレンダー取得不可: 権限がない、またはアカウントが間違っています。\n";
-      return ContentService.createTextOutput(output);
-    }
     output += "カレンダー取得: 成功\n";
 
-    var startTime = new Date();
-    startTime.setMonth(startTime.getMonth() - 1);
-    var endTime = new Date();
-    endTime.setFullYear(endTime.getFullYear() + 1);
-    var events = cal.getEvents(startTime, endTime);
+    var debugStart = new Date();
+    debugStart.setMonth(debugStart.getMonth() - 1);
+    var debugEnd = new Date();
+    debugEnd.setFullYear(debugEnd.getFullYear() + 1);
+    var debugEvents = cal.getEvents(debugStart, debugEnd);
 
     var lineEventCount = 0;
-    for (var i = 0; i < events.length; i++) {
-      var desc = events[i].getDescription() || "";
+    for (var i = 0; i < debugEvents.length; i++) {
+      var desc = debugEvents[i].getDescription() || "";
       if (desc.indexOf("[LINE_APP_RES_ID:") !== -1) {
         lineEventCount++;
       }

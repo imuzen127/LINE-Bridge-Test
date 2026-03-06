@@ -832,6 +832,31 @@
 
             const listContainer = document.getElementById('reservationListContainer');
 
+            // 共通のGAS URL (※新しいデプロイURLに書き換えてください)
+            const GAS_URL = "https://script.google.com/macros/s/AKfycbwo5-ybRRkuMKJRrqTeOubvIFappm66g58rQc3VzdRuDSlw3AKtjL9eKFjruQfXWZUR/exec";
+
+            // カレンダー内の既存の予定（ネイティブイベント）を保持する配列
+            let nativeEvents = [];
+
+            // ページ読み込み時にGASからカレンダーの既存予定を取得する
+            async function fetchNativeEvents() {
+                if (!GAS_URL || GAS_URL.includes("/library/")) return;
+                try {
+                    // APIモードとしてリクエスト
+                    const response = await fetch(GAS_URL + "?action=getBusySlots");
+                    const data = await response.json();
+                    if (data.status === "success" && Array.isArray(data.events)) {
+                        nativeEvents = data.events;
+                        console.log("同期中のカレンダー上の予定:", nativeEvents);
+                    }
+                } catch (error) {
+                    console.error("カレンダーの予定取得に失敗しました:", error);
+                }
+            }
+
+            // 初回取得
+            fetchNativeEvents();
+
             // 終日チェックボックスのイベントリスナー
             allDayCheckbox.addEventListener('change', (e) => {
                 if (e.target.checked) {
@@ -950,7 +975,8 @@
                     const newStartMins = isAllDay ? 0 : getTimeInMinutes(timeVal);
                     const newEndMins = isAllDay ? 1440 : getTimeInMinutes(endTimeVal); // 1440 = 24 * 60 (終日は1日全部とする)
 
-                    const isOverlap = reservations.some(r => {
+                    // まずアプリ内ローカルの予約リストと被りがないかチェック
+                    let isOverlap = reservations.some(r => {
                         // 自分自身の編集時は除外
                         if (tempId && r.id === tempId) return false;
 
@@ -966,6 +992,22 @@
                         // 既存の開始<新規の終了 && 新規の開始<既存の終了 なら被っている
                         return (existStartMins < newEndMins) && (newStartMins < existEndMins);
                     });
+
+                    // アプリ内で被りがなければ、Googleカレンダーの直接の予定（ネイティブイベント）と被りがないかチェック
+                    if (!isOverlap && nativeEvents.length > 0) {
+                        isOverlap = nativeEvents.some(ne => {
+                            // 日付が違う場合はパス（ne.date は YYYY-MM-DD 文字列）
+                            if (ne.date !== dateVal) return false;
+
+                            // どちらかが終日の場合
+                            if (isAllDay || ne.isAllDay) return true;
+
+                            // 分単位での比較
+                            const existStartMins = getTimeInMinutes(ne.time);
+                            const existEndMins = getTimeInMinutes(ne.endTime);
+                            return (existStartMins < newEndMins) && (newStartMins < existEndMins);
+                        });
+                    }
 
                     if (isOverlap) {
                         overlapWarning = true;
@@ -1181,8 +1223,6 @@
             // 予約の有効化（GAS同期）処理
             const activateBtn = document.getElementById('activateBtn');
             activateBtn.addEventListener('click', () => {
-                const GAS_URL = "https://script.google.com/macros/s/AKfycbwo5-ybRRkuMKJRrqTeOubvIFappm66g58rQc3VzdRuDSlw3AKtjL9eKFjruQfXWZUR/exec";
-
                 if (!GAS_URL || GAS_URL.includes("/library/")) {
                     showToast('正しいWebアプリのURL( /exec で終わるもの )を設定してください');
                     return;
