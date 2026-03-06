@@ -681,6 +681,17 @@
                     新規予約
                 </h2>
                 <form id="reservationForm" novalidate>
+                    <div id="overlapError" class="error-message"
+                        style="display: none; justify-content: center; margin-bottom: 16px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        既に同じ時間帯に予約があります
+                    </div>
+
                     <div class="form-group">
                         <label class="form-label">お名前<span class="badge badge-required">必須</span></label>
                         <input type="text" id="name" class="form-control" placeholder="例: 山田 太郎">
@@ -817,6 +828,7 @@
             const dateError = document.getElementById('dateError');
             const timeError = document.getElementById('timeError');
             const endTimeError = document.getElementById('endTimeError');
+            const overlapError = document.getElementById('overlapError');
 
             const listContainer = document.getElementById('reservationListContainer');
 
@@ -879,6 +891,7 @@
                 dateError.style.display = 'none';
                 timeError.style.display = 'none';
                 endTimeError.style.display = 'none';
+                overlapError.style.display = 'none';
                 nameInput.style.borderColor = 'var(--border-color)';
                 dateInput.style.borderColor = 'var(--border-color)';
                 timeInput.style.borderColor = 'var(--border-color)';
@@ -919,6 +932,47 @@
                     if (!endTimeVal) {
                         endTimeError.style.display = 'flex';
                         endTimeInput.style.borderColor = 'var(--error-color)';
+                        isValid = false;
+                    }
+                }
+
+                // 時間帯重複チェック
+                if (isValid) {
+                    const tempId = form.dataset.editingId;
+
+                    // 比較用の新規予約の開始時間と終了時間を分で取得するヘルパー
+                    const getTimeInMinutes = (timeStr) => {
+                        const [hours, minutes] = timeStr.split(':').map(Number);
+                        return hours * 60 + minutes;
+                    };
+
+                    const newStartMins = isAllDay ? 0 : getTimeInMinutes(timeVal);
+                    const newEndMins = isAllDay ? 1440 : getTimeInMinutes(endTimeVal); // 1440 = 24 * 60 (終日は1日全部とする)
+
+                    const isOverlap = reservations.some(r => {
+                        // 自分自身の編集時は除外
+                        if (tempId && r.id === tempId) return false;
+
+                        // 同じ日付でないなら重複しない
+                        if (r.date !== dateVal) return false;
+
+                        // どちらかが終日なら無条件でその日は重複扱いとする
+                        if (isAllDay || r.isAllDay) return true;
+
+                        const existStartMins = getTimeInMinutes(r.time);
+                        const existEndMins = getTimeInMinutes(r.endTime);
+
+                        // 既存の開始<新規の終了 && 新規の開始<既存の終了 なら被っている
+                        return (existStartMins < newEndMins) && (newStartMins < existEndMins);
+                    });
+
+                    if (isOverlap) {
+                        overlapError.style.display = 'flex';
+                        if (!isAllDay) {
+                            timeInput.style.borderColor = 'var(--error-color)';
+                            endTimeInput.style.borderColor = 'var(--error-color)';
+                        }
+                        dateInput.style.borderColor = 'var(--error-color)';
                         isValid = false;
                     }
                 }
