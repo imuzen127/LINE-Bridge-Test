@@ -88,12 +88,16 @@
             }
         }
 
-        .header-icon {
-            width: 28px;
-            height: 28px;
-            border-radius: 4px;
-            margin-right: 12px;
-            border: 1px solid var(--primary-color);
+        .logo-container {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .top-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 2px solid var(--primary-color);
             box-shadow: var(--glow);
             object-fit: cover;
         }
@@ -616,8 +620,10 @@
 
 <body>
     <div class="app-container">
+        <div class="logo-container">
+            <img src="icon.jpg" alt="Service Icon" class="top-logo">
+        </div>
         <div class="header">
-            <img src="icon.jpg" alt="Service Icon" class="header-icon">
             予約受付
         </div>
 
@@ -904,6 +910,19 @@
 
                     // 保存
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
+
+                    // GAS への送信 (URLが設定されている場合)
+                    const GAS_URL = ""; /* 【重要】ここにデプロイしたGoogle Apps ScriptのWebアプリURLを貼り付けてください */
+                    if (GAS_URL) {
+                        fetch(GAS_URL, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "text/plain", // CORS回避のためtext/plainとして送信（受診側でJSONパース）
+                            },
+                            body: JSON.stringify(newReservation)
+                        }).then(res => console.log("GASへの送信が完了しました"))
+                            .catch(err => console.error("GASへの送信でエラーが発生しました:", err));
+                    }
 
                     // リスト更新
                     renderReservations();
