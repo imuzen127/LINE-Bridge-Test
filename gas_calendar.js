@@ -20,8 +20,8 @@ function doPost(e) {
     // 1. アプリから送られてきたデータ(予約一覧の配列)を取得
     var reservations = JSON.parse(e.postData.contents);
 
-    // 2. 指定されたアカウントのカレンダーを取得
-    var cal = CalendarApp.getCalendarById('imuzen8191@gmail.com');
+    // 2. カレンダーを取得 (imuzen127@gmail.comに変更)
+    var cal = CalendarApp.getCalendarById('imuzen127@gmail.com');
     if (!cal) {
       throw new Error("指定されたカレンダーにアクセスできません。共有設定などを確認してください。");
     }
