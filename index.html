@@ -88,6 +88,16 @@
             }
         }
 
+        .header-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            margin-right: 12px;
+            border: 1px solid var(--primary-color);
+            box-shadow: var(--glow);
+            object-fit: cover;
+        }
+
         .content {
             flex: 1;
             display: flex;
@@ -143,6 +153,8 @@
             font-weight: normal;
             margin-bottom: 8px;
             color: var(--text-main);
+            display: flex;
+            align-items: center;
         }
 
         .form-label .badge {
@@ -194,6 +206,73 @@
             resize: vertical;
             min-height: 100px;
             border-radius: 2px;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+            cursor: pointer;
+            font-size: 14px;
+            user-select: none;
+        }
+
+        .checkbox-container input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        .checkmark {
+            height: 18px;
+            width: 18px;
+            background-color: var(--secondary-color);
+            border: 1px solid var(--border-color);
+            border-radius: 2px;
+            display: inline-block;
+            margin-right: 8px;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .checkbox-container:hover input~.checkmark {
+            border-color: var(--highlight);
+        }
+
+        .checkbox-container input:checked~.checkmark {
+            background-color: var(--highlight);
+            border-color: var(--highlight);
+        }
+
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+        }
+
+        .checkbox-container input:checked~.checkmark:after {
+            display: block;
+        }
+
+        .checkbox-container .checkmark:after {
+            left: 5px;
+            top: 2px;
+            width: 4px;
+            height: 8px;
+            border: solid var(--bg-color);
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .time-inputs-container {
+            transition: opacity 0.3s;
+        }
+
+        .time-inputs-container.disabled {
+            opacity: 0.4;
+            pointer-events: none;
         }
 
         .error-message {
@@ -538,6 +617,7 @@
 <body>
     <div class="app-container">
         <div class="header">
+            <img src="icon.jpg" alt="Service Icon" class="header-icon">
             予約受付
         </div>
 
@@ -581,31 +661,39 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label">開始時間<span class="badge badge-required">必須</span></label>
-                        <input type="time" id="time" class="form-control">
-                        <div id="timeError" class="error-message" style="display: none;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <line x1="12" y1="8" x2="12" y2="12"></line>
-                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                            </svg>
-                            開始時間を選択してください
-                        </div>
-                    </div>
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="allDay">
+                        <span class="checkmark"></span>
+                        終日
+                    </label>
 
-                    <div class="form-group">
-                        <label class="form-label">終了時間<span class="badge badge-required">必須</span></label>
-                        <input type="time" id="endTime" class="form-control">
-                        <div id="endTimeError" class="error-message" style="display: none;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <line x1="12" y1="8" x2="12" y2="12"></line>
-                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                            </svg>
-                            終了時間を選択してください
+                    <div id="timeInputsContainer" class="time-inputs-container">
+                        <div class="form-group">
+                            <label class="form-label">開始時間<span class="badge badge-required">必須</span></label>
+                            <input type="time" id="time" class="form-control">
+                            <div id="timeError" class="error-message" style="display: none;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                </svg>
+                                開始時間を選択してください
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">終了時間<span class="badge badge-required">必須</span></label>
+                            <input type="time" id="endTime" class="form-control">
+                            <div id="endTimeError" class="error-message" style="display: none;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                </svg>
+                                終了時間を選択してください
+                            </div>
                         </div>
                     </div>
 
@@ -660,6 +748,8 @@
             const form = document.getElementById('reservationForm');
             const nameInput = document.getElementById('name');
             const dateInput = document.getElementById('date');
+            const allDayCheckbox = document.getElementById('allDay');
+            const timeInputsContainer = document.getElementById('timeInputsContainer');
             const timeInput = document.getElementById('time');
             const endTimeInput = document.getElementById('endTime');
             const memoInput = document.getElementById('memo');
@@ -670,6 +760,31 @@
             const endTimeError = document.getElementById('endTimeError');
 
             const listContainer = document.getElementById('reservationListContainer');
+
+            // 終日チェックボックスのイベントリスナー
+            allDayCheckbox.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    timeInputsContainer.classList.add('disabled');
+                    // エラー表示をリセット
+                    timeError.style.display = 'none';
+                    endTimeError.style.display = 'none';
+                    timeInput.style.borderColor = 'var(--border-color)';
+                    endTimeInput.style.borderColor = 'var(--border-color)';
+                    // 必須バッジを任意に変更
+                    document.querySelectorAll('#timeInputsContainer .badge').forEach(badge => {
+                        badge.className = 'badge badge-optional';
+                        badge.textContent = '任意';
+                    });
+                } else {
+                    timeInputsContainer.classList.remove('disabled');
+                    // 必須バッジに戻す
+                    document.querySelectorAll('#timeInputsContainer .badge').forEach(badge => {
+                        badge.className = 'badge badge-required';
+                        badge.textContent = '必須';
+                    });
+                }
+            });
+
             const toast = document.getElementById('toast');
             const successModal = document.getElementById('successModal');
 
@@ -728,20 +843,25 @@
                     isValid = false;
                 }
 
-                // 時間の入力チェック
-                const timeVal = timeInput.value;
-                if (!timeVal) {
-                    timeError.style.display = 'flex';
-                    timeInput.style.borderColor = 'var(--error-color)';
-                    isValid = false;
-                }
+                const isAllDay = allDayCheckbox.checked;
 
-                // 終了時間の入力チェック
+                // 時間の入力チェック (終日でない場合のみ)
+                const timeVal = timeInput.value;
                 const endTimeVal = endTimeInput.value;
-                if (!endTimeVal) {
-                    endTimeError.style.display = 'flex';
-                    endTimeInput.style.borderColor = 'var(--error-color)';
-                    isValid = false;
+
+                if (!isAllDay) {
+                    if (!timeVal) {
+                        timeError.style.display = 'flex';
+                        timeInput.style.borderColor = 'var(--error-color)';
+                        isValid = false;
+                    }
+
+                    // 終了時間の入力チェック
+                    if (!endTimeVal) {
+                        endTimeError.style.display = 'flex';
+                        endTimeInput.style.borderColor = 'var(--error-color)';
+                        isValid = false;
+                    }
                 }
 
                 // バリデーション成功時の処理
@@ -758,8 +878,9 @@
                         // 様 は不要に変更
                         name: nameVal,
                         date: dateVal,
-                        time: timeVal,
-                        endTime: endTimeVal,
+                        isAllDay: isAllDay,
+                        time: isAllDay ? "" : timeVal,
+                        endTime: isAllDay ? "" : endTimeVal,
                         memo: memoInput.value.trim(),
                         createdAt: new Date().toISOString()
                     };
@@ -768,9 +889,17 @@
 
                     // 日付・時間順にソート (昇順)
                     reservations.sort((a, b) => {
-                        const dateA = new Date(`${a.date}T${a.time}`);
-                        const dateB = new Date(`${b.date}T${b.time}`);
-                        return dateA - dateB;
+                        if (a.date !== b.date) {
+                            return new Date(a.date) - new Date(b.date);
+                        }
+
+                        // 同じ日の場合、終日が先
+                        if (a.isAllDay && !b.isAllDay) return -1;
+                        if (!a.isAllDay && b.isAllDay) return 1;
+                        if (a.isAllDay && b.isAllDay) return 0;
+
+                        // 時間順
+                        return a.time.localeCompare(b.time);
                     });
 
                     // 保存
@@ -783,6 +912,22 @@
                     form.reset();
                     // 編集中ステータスをクリア
                     delete form.dataset.editingId;
+
+                    // 終了時間トグルUIをリセット
+                    allDayCheckbox.checked = false;
+                    timeInputsContainer.classList.remove('disabled');
+                    document.querySelectorAll('#timeInputsContainer .badge').forEach(badge => {
+                        badge.className = 'badge badge-required';
+                        badge.textContent = '必須';
+                    });
+
+                    // 終了時間トグルUIをリセット
+                    allDayCheckbox.checked = false;
+                    timeInputsContainer.classList.remove('disabled');
+                    document.querySelectorAll('#timeInputsContainer .badge').forEach(badge => {
+                        badge.className = 'badge badge-required';
+                        badge.textContent = '必須';
+                    });
 
                     // 予約完了モーダルを表示
                     successModal.classList.add('show');
@@ -812,9 +957,11 @@
                     const [y, m, d] = res.date.split('-');
                     const displayDate = `${y}年${parseInt(m)}月${parseInt(d)}日`;
 
+                    const displayTime = res.isAllDay ? "終日" : `${res.time} ~ ${res.endTime}`;
+
                     let html = `
                         <div class="res-header">
-                            <span class="res-datetime">"${displayDate} ${res.time} ~ ${res.endTime}"</span>
+                            <span class="res-datetime">"${displayDate} ${displayTime}"</span>
                             <div class="actions-col">
                                 <button class="edit-btn" onclick="editReservation('${res.id}')" aria-label="編集"></button>
                                 <button class="delete-btn" onclick="deleteReservation('${res.id}')" aria-label="削除"></button>
@@ -868,8 +1015,19 @@
                     document.getElementById('name').value = target.name;
                     // flatpickrが適用されている要素への日付セット
                     document.getElementById('date')._flatpickr.setDate(target.date);
-                    document.getElementById('time').value = target.time;
-                    document.getElementById('endTime').value = target.endTime || "";
+
+                    allDayCheckbox.checked = !!target.isAllDay;
+                    // changeイベントを手動発火させてUIの状態を更新
+                    allDayCheckbox.dispatchEvent(new Event('change'));
+
+                    if (!target.isAllDay) {
+                        document.getElementById('time').value = target.time || "";
+                        document.getElementById('endTime').value = target.endTime || "";
+                    } else {
+                        document.getElementById('time').value = "";
+                        document.getElementById('endTime').value = "";
+                    }
+
                     document.getElementById('memo').value = target.memo || "";
 
                     form.dataset.editingId = target.id; // 送信時に上書きするためのフラグ
