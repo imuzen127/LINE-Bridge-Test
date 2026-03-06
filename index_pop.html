@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>予約受付</title>
+    <!-- カレンダー用ライブラリ (Flatpickr) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        /* CSSリセット & 変数定義 */
+        :root {
+            /* ポップなメインカラー */
+            --primary-color: #FF6B6B;
+            /* サーモンピンク */
+            --primary-hover: #FA5252;
+            --secondary-color: #4ECDC4;
+            /* ミントグリーン */
+            --bg-color: #FFE66D;
+            /* ポップなイエロー */
+            --card-bg: #FFFFFF;
+            --text-main: #2B2D42;
+            --text-sub: #8D99AE;
+            --border-color: #EDF2F4;
+            --error-color: #EF233C;
+            --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-float: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        body {
+            font-family: 'Nunito', 'M PLUS Rounded 1c', -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(var(--secondary-color) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* スマホ向けコンテナ */
+        .app-container {
+            max-width: 480px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+            box-sizing: border-box;
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            color: white;
+            text-align: center;
+            padding: 20px 16px;
+            font-size: 24px;
+            font-weight: 800;
+            border-radius: 24px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-md);
+            position: relative;
+            z-index: 10;
+            letter-spacing: 1px;
+        }
+
+        .header::after {
+            content: "✨";
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+        }
+
+        .header::before {
+            content: "✨";
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+            border: 3px solid var(--text-main);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-float);
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 800;
+            margin-top: 0;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-main);
+            border-bottom: 3px dashed var(--secondary-color);
+            padding-bottom: 12px;
+        }
+
+        /* フォーム関連 */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 15px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        .form-label .badge {
+            font-size: 11px;
+            margin-left: 8px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            vertical-align: middle;
+            font-weight: bold;
+        }
+
+        .badge-required {
+            background-color: #FFE3E3;
+            color: var(--error-color);
+            border: 1px solid var(--error-color);
+        }
+
+        .badge-optional {
+            background-color: #E9ECEF;
+            color: var(--text-sub);
+            border: 1px solid var(--text-sub);
+        }
+
+        .form-control {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 14px;
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            font-size: 16px;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            font-family: inherit;
+            background-color: #F8F9FA;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            background-color: #FFFFFF;
+            box-shadow: 0 0 0 4px rgba(78, 205, 196, 0.2);
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 100px;
+            border-radius: 16px;
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: 13px;
+            margin-top: 8px;
+            display: none;
+            align-items: center;
+            gap: 6px;
+            font-weight: bold;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            75% {
+                transform: translateX(5px);
+            }
+        }
+
+        .btn-submit {
+            background-color: var(--primary-color);
+            color: white;
+            border: 3px solid var(--text-main);
+            border-radius: 100px;
+            /* 丸みを強調 */
+            padding: 20px;
+            /* ★ボタンをより大きく設定 */
+            font-size: 22px;
+            /* ★文字サイズも大きく */
+            font-weight: 900;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 6px 0 var(--text-main);
+            /* ★影も厚くしてリッチに */
+            margin-top: 20px;
+            /* ★上部マージン追加 */
+        }
+
+        .btn-submit:active {
+            transform: translateY(6px);
+            /* ★押し込み量も調整 */
+            box-shadow: 0 0 0 var(--text-main);
+            background-color: var(--primary-hover);
+        }
+
+        /* 完了モーダル関連 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(43, 45, 66, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border: 4px solid var(--text-main);
+            border-radius: 32px;
+            padding: 40px 24px;
+            text-align: center;
+            box-shadow: 8px 8px 0 var(--secondary-color);
+            width: 100%;
+            max-width: 320px;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0.5) translateY(20px);
+                opacity: 0;
+            }
+
+            100% {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            animation: bounceIn 1s ease infinite alternate;
+        }
+
+        @keyframes bounceIn {
+            0% {
+                transform: translateY(0);
+            }
+
+            100% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--text-main);
+            margin: 0 0 12px 0;
+        }
+
+        .modal-text {
+            font-size: 16px;
+            color: var(--text-sub);
+            margin: 0 0 24px 0;
+            line-height: 1.5;
+            font-weight: bold;
+        }
+
+        .btn-close-modal {
+            background-color: var(--secondary-color);
+            color: var(--text-main);
+            border: 3px solid var(--text-main);
+            border-radius: 100px;
+            padding: 16px 24px;
+            font-size: 18px;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 4px 0 var(--text-main);
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .btn-close-modal:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 var(--text-main);
+        }
+
+        /* 予約一覧関連 */
+        .reservation-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .reservation-item {
+            border: 2px solid var(--text-main);
+            border-radius: 20px;
+            padding: 20px;
+            background-color: #FFFFFF;
+            box-shadow: 4px 4px 0 var(--secondary-color);
+            transition: transform 0.2s ease;
+        }
+
+        .reservation-item:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0 var(--secondary-color);
+        }
+
+        .res-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 12px;
+        }
+
+        .res-datetime {
+            font-weight: 900;
+            color: var(--primary-color);
+            font-size: 18px;
+            background-color: #FFF0F0;
+            padding: 6px 12px;
+            border-radius: 12px;
+        }
+
+        .res-name {
+            font-weight: 800;
+            font-size: 18px;
+            color: var(--text-main);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .res-memo {
+            font-size: 15px;
+            color: var(--text-sub);
+            white-space: pre-wrap;
+            background: #F8F9FA;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px dashed var(--text-sub);
+            line-height: 1.5;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-sub);
+            padding: 40px 0;
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .delete-btn {
+            border: 2px solid var(--text-main);
+            background: #FFFFFF;
+            color: var(--text-main);
+            padding: 6px;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.2s;
+            box-shadow: 2px 2px 0 var(--text-main);
+        }
+
+        .delete-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0 0 0 var(--text-main);
+            background-color: #FFEEEE;
+            color: var(--error-color);
+        }
+
+        /* トースト通知 */
+        .toast {
+            position: fixed;
+            bottom: -80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text-main);
+            color: white;
+            padding: 16px 32px;
+            border-radius: 100px;
+            font-size: 16px;
+            font-weight: 800;
+            transition: bottom 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 100;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .toast.show {
+            bottom: 40px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <div class="header">
+            予約受付
+        </div>
+
+        <div class="content">
+            <!-- 予約フォーム -->
+            <div class="card">
+                <h2 class="card-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
+                    新規予約
+                </h2>
+                <form id="reservationForm" novalidate>
+                    <div class="form-group">
+                        <label class="form-label">お名前<span class="badge badge-required">必須</span></label>
+                        <input type="text" id="name" class="form-control" placeholder="例: 山田 太郎">
+                        <div id="nameError" class="error-message" style="display: none;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            名前を入力してください
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">日付<span class="badge badge-required">必須</span></label>
+                        <input type="date" id="date" class="form-control">
+                        <div id="dateError" class="error-message" style="display: none;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            有効な日付を選択してください
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">時間<span class="badge badge-required">必須</span></label>
+                        <input type="time" id="time" class="form-control">
+                        <div id="timeError" class="error-message" style="display: none;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            時間を選択してください
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">メモ<span class="badge badge-optional">任意</span></label>
+                        <textarea id="memo" class="form-control" placeholder="ご要望などがありましたらご記入ください"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn-submit">予約を確定する</button>
+                </form>
+            </div>
+
+            <!-- 予約一覧 -->
+            <div class="card">
+                <h2 class="card-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    予約一覧
+                </h2>
+                <div id="reservationListContainer">
+                    <div class="empty-state">予約はまだありません</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- トースト通知用要素 -->
+    <div id="toast" class="toast">予約が完了しました</div>
+
+    <!-- 完了メッセージモーダル -->
+    <div id="successModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-icon">🎉</div>
+            <h3 class="modal-title">予約完了！</h3>
+            <p class="modal-text">ご予約ありがとうございます。<br>お待ちしております！</p>
+            <button class="btn-close-modal" onclick="closeModal()">閉じる</button>
+        </div>
+    </div>
+
+    <!-- カレンダー用ライブラリ スクリプト -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('reservationForm');
+            const nameInput = document.getElementById('name');
+            const dateInput = document.getElementById('date');
+            const timeInput = document.getElementById('time');
+            const memoInput = document.getElementById('memo');
+
+            const nameError = document.getElementById('nameError');
+            const dateError = document.getElementById('dateError');
+            const timeError = document.getElementById('timeError');
+
+            const listContainer = document.getElementById('reservationListContainer');
+            const toast = document.getElementById('toast');
+            const successModal = document.getElementById('successModal');
+
+            // カレンダー形式の設定 (Flatpickr)
+            flatpickr(dateInput, {
+                locale: "ja",
+                minDate: "today",
+                dateFormat: "Y-m-d",
+                disableMobile: true // モバイル環境では使い慣れたOSネイティブのカレンダーUIを優先
+            });
+
+            // 過去の日付を選択できないように、今日の日付をmin属性に設定
+            const today = new Date();
+            // JST等考慮しローカルタイムベースで計算
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            dateInput.min = `${yyyy}-${mm}-${dd}`;
+
+            // localStorageから予約データを取得 (API通信の代わり)
+            const STORAGE_KEY = 'line_app_reservations';
+            let reservations = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+
+            // 初期表示
+            renderReservations();
+
+            // フォーム送信アクション
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+
+                // エラー表示を一旦リセット
+                nameError.style.display = 'none';
+                dateError.style.display = 'none';
+                timeError.style.display = 'none';
+                nameInput.style.borderColor = 'var(--border-color)';
+                dateInput.style.borderColor = 'var(--border-color)';
+                timeInput.style.borderColor = 'var(--border-color)';
+
+                let isValid = true;
+
+                // 文字列の入力チェック（名前）
+                const nameVal = nameInput.value.trim();
+                if (!nameVal) {
+                    nameError.style.display = 'flex';
+                    nameInput.style.borderColor = 'var(--error-color)';
+                    isValid = false;
+                }
+
+                // 日付の入力チェック
+                const dateVal = dateInput.value;
+                if (!dateVal) {
+                    dateError.style.display = 'flex';
+                    dateInput.style.borderColor = 'var(--error-color)';
+                    isValid = false;
+                }
+
+                // 時間の入力チェック
+                const timeVal = timeInput.value;
+                if (!timeVal) {
+                    timeError.style.display = 'flex';
+                    timeInput.style.borderColor = 'var(--error-color)';
+                    isValid = false;
+                }
+
+                // バリデーション成功時の処理
+                if (isValid) {
+                    const newReservation = {
+                        id: Date.now().toString(), // ユニークID
+                        name: nameVal,
+                        date: dateVal,
+                        time: timeVal,
+                        memo: memoInput.value.trim(),
+                        createdAt: new Date().toISOString()
+                    };
+
+                    reservations.push(newReservation);
+
+                    // 日付・時間順にソート (昇順)
+                    reservations.sort((a, b) => {
+                        const dateA = new Date(`${a.date}T${a.time}`);
+                        const dateB = new Date(`${b.date}T${b.time}`);
+                        return dateA - dateB;
+                    });
+
+                    // 保存
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
+
+                    // リスト更新
+                    renderReservations();
+
+                    // フォームをリセット
+                    form.reset();
+
+                    // 予約完了モーダルを表示
+                    successModal.classList.add('show');
+                }
+            });
+
+            // 閉じるボタンの処理
+            window.closeModal = function () {
+                successModal.classList.remove('show');
+            };
+
+            // 予約一覧の描画関数
+            function renderReservations() {
+                if (reservations.length === 0) {
+                    listContainer.innerHTML = '<div class="empty-state">予約はまだありません</div>';
+                    return;
+                }
+
+                const ul = document.createElement('ul');
+                ul.className = 'reservation-list';
+
+                reservations.forEach(res => {
+                    const li = document.createElement('li');
+                    li.className = 'reservation-item';
+
+                    // 日付のフォーマット (YYYY-MM-DD -> YYYY年M月D日)
+                    const [y, m, d] = res.date.split('-');
+                    const displayDate = `${y}年${parseInt(m)}月${parseInt(d)}日`;
+
+                    let html = `
+                        <div class="res-header">
+                            <span class="res-datetime">${displayDate} ${res.time}</span>
+                            <button class="delete-btn" onclick="deleteReservation('${res.id}')" aria-label="削除">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
+                        </div>
+                        <div class="res-name">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-sub)" stroke-width="2" style="vertical-align: text-bottom; margin-right: 4px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                            ${escapeHTML(res.name)} 様
+                        </div>
+                    `;
+
+                    if (res.memo) {
+                        html += `<div class="res-memo">${escapeHTML(res.memo)}</div>`;
+                    }
+
+                    li.innerHTML = html;
+                    ul.appendChild(li);
+                });
+
+                listContainer.innerHTML = '';
+                listContainer.appendChild(ul);
+            }
+
+            // XSS対策のためのエスケープ処理
+            function escapeHTML(str) {
+                return str.replace(/[&<>'"]/g,
+                    tag => ({
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        "'": '&#39;',
+                        '"': '&quot;'
+                    }[tag] || tag)
+                );
+            }
+
+            // トースト通知の表示関数
+            function showToast(message) {
+                toast.textContent = message;
+                toast.classList.add('show');
+
+                // 3秒後に非表示
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+
+            // 削除処理（グローバル関数として定義）
+            window.deleteReservation = function (id) {
+                if (confirm('この予約を削除してもよろしいですか？')) {
+                    reservations = reservations.filter(r => r.id !== id);
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
+                    renderReservations();
+                    showToast('予約を削除しました');
+                }
+            };
+        });
+    </script>
+</body>
+
+</html>
