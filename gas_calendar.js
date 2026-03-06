@@ -99,3 +99,46 @@ function doPost(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 }
+
+// =========================================================================
+// デバッグ・確認用 (WebアプリのURLにブラウザから直接アクセスした時に表示されます)
+// =========================================================================
+function doGet(e) {
+  try {
+    var targetAccount = 'imuzen127@gmail.com';
+    var cal = CalendarApp.getCalendarById(targetAccount);
+
+    var output = "LINEアプリ連携 - デバッグ画面\n";
+    output += "===========================\n";
+    output += "実行アカウント: " + Session.getActiveUser().getEmail() + "\n";
+    output += "対象カレンダー: " + targetAccount + "\n";
+
+    if (!cal) {
+      output += "\n【エラー】カレンダー取得不可: 権限がない、またはアカウントが間違っています。\n";
+      return ContentService.createTextOutput(output);
+    }
+    output += "カレンダー取得: 成功\n";
+
+    var startTime = new Date();
+    startTime.setMonth(startTime.getMonth() - 1);
+    var endTime = new Date();
+    endTime.setFullYear(endTime.getFullYear() + 1);
+    var events = cal.getEvents(startTime, endTime);
+
+    var lineEventCount = 0;
+    for (var i = 0; i < events.length; i++) {
+      var desc = events[i].getDescription() || "";
+      if (desc.indexOf("[LINE_APP_RES_ID:") !== -1) {
+        lineEventCount++;
+      }
+    }
+
+    output += "\nこのカレンダー内に登録されているLINEアプリからの予約数: " + lineEventCount + " 件\n";
+    output += "===========================\n";
+    output += "※「予約数」が0より大きいのにカレンダーアプリで見えない場合、「" + targetAccount + "」のカレンダーの表示チェックが入っていないだけです。\n";
+
+    return ContentService.createTextOutput(output);
+  } catch (error) {
+    return ContentService.createTextOutput("【致命的エラー】\n" + error.toString());
+  }
+}
