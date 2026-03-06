@@ -974,6 +974,12 @@
 
                 // バリデーション成功時の処理
                 if (isValid) {
+                    // 重複時の確認ポップアップ
+                    if (overlapWarning) {
+                        if (!confirm("⚠️ 既に同じ時間帯に予約が入っていますが、このまま登録しますか？\n（[OK]を押すとそのまま登録されます）")) {
+                            return; // キャンセルした場合は処理を中断
+                        }
+                    }
                     // 編集機能のために、既存と同じIDのデータがあれば削除しておく（上書き）
                     const tempId = form.dataset.editingId;
 
@@ -1177,13 +1183,8 @@
             activateBtn.addEventListener('click', () => {
                 const GAS_URL = "https://script.google.com/macros/s/AKfycbwo5-ybRRkuMKJRrqTeOubvIFappm66g58rQc3VzdRuDSlw3AKtjL9eKFjruQfXWZUR/exec";
 
-                if (!GAS_URL) {
-                    showToast('GASのURLが設定されていません');
-                    return;
-                }
-
-                if (reservations.length === 0) {
-                    showToast('有効化する予約がありません');
+                if (!GAS_URL || GAS_URL.includes("/library/")) {
+                    showToast('正しいWebアプリのURL( /exec で終わるもの )を設定してください');
                     return;
                 }
 

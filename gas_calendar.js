@@ -62,32 +62,24 @@ function doPost(e) {
       var event = existingEventsMap[data.id];
 
       if (event) {
-        // [更新] すでに存在する場合は内容を上書き
-        if (data.isAllDay) {
-          event.setAllDayDate(new Date(data.date + "T00:00:00+09:00"));
-        } else {
-          var start = new Date(data.date + "T" + data.time + ":00+09:00");
-          var end = new Date(data.date + "T" + data.endTime + ":00+09:00");
-          event.setTime(start, end);
-        }
-        event.setTitle(title);
-        event.setDescription(description);
+        // [更新] シームレスに新しい時間帯や終日設定にするため、既存のものを一旦削除して再作成する
+        try { event.deleteEvent(); } catch (e) { }
+      }
+
+      // カレンダーに予定を追加（新規用、更新用の両方）
+      if (data.isAllDay) {
+        cal.createAllDayEvent(title, new Date(data.date + "T00:00:00+09:00"), { description: description });
       } else {
-        // [新規作成] まだ存在しない場合はカレンダーに追加
-        if (data.isAllDay) {
-          cal.createAllDayEvent(title, new Date(data.date + "T00:00:00+09:00"), { description: description });
-        } else {
-          var start = new Date(data.date + "T" + data.time + ":00+09:00");
-          var end = new Date(data.date + "T" + data.endTime + ":00+09:00");
-          cal.createEvent(title, start, end, { description: description });
-        }
+        var start = new Date(data.date + "T" + data.time + ":00+09:00");
+        var end = new Date(data.date + "T" + data.endTime + ":00+09:00");
+        cal.createEvent(title, start, end, { description: description });
       }
     }
 
     // 5. アプリ上で削除された予約をカレンダーからも消去
     for (var id in existingEventsMap) {
       if (!incomingIds[id]) {
-        existingEventsMap[id].deleteEvent();
+        try { existingEventsMap[id].deleteEvent(); } catch (e) { }
       }
     }
 
