@@ -64,10 +64,10 @@ function doPost(e) {
       if (event) {
         // [更新] すでに存在する場合は内容を上書き
         if (data.isAllDay) {
-          event.setAllDayDate(new Date(data.date));
+          event.setAllDayDate(new Date(data.date + "T00:00:00+09:00"));
         } else {
-          var start = new Date(data.date + "T" + data.time + ":00");
-          var end = new Date(data.date + "T" + data.endTime + ":00");
+          var start = new Date(data.date + "T" + data.time + ":00+09:00");
+          var end = new Date(data.date + "T" + data.endTime + ":00+09:00");
           event.setTime(start, end);
         }
         event.setTitle(title);
@@ -75,10 +75,10 @@ function doPost(e) {
       } else {
         // [新規作成] まだ存在しない場合はカレンダーに追加
         if (data.isAllDay) {
-          cal.createAllDayEvent(title, new Date(data.date), { description: description });
+          cal.createAllDayEvent(title, new Date(data.date + "T00:00:00+09:00"), { description: description });
         } else {
-          var start = new Date(data.date + "T" + data.time + ":00");
-          var end = new Date(data.date + "T" + data.endTime + ":00");
+          var start = new Date(data.date + "T" + data.time + ":00+09:00");
+          var end = new Date(data.date + "T" + data.endTime + ":00+09:00");
           cal.createEvent(title, start, end, { description: description });
         }
       }
