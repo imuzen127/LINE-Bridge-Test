@@ -937,6 +937,7 @@
                 }
 
                 // 時間帯重複チェック
+                let overlapWarning = false;
                 if (isValid) {
                     const tempId = form.dataset.editingId;
 
@@ -967,13 +968,7 @@
                     });
 
                     if (isOverlap) {
-                        overlapError.style.display = 'flex';
-                        if (!isAllDay) {
-                            timeInput.style.borderColor = 'var(--error-color)';
-                            endTimeInput.style.borderColor = 'var(--error-color)';
-                        }
-                        dateInput.style.borderColor = 'var(--error-color)';
-                        isValid = false;
+                        overlapWarning = true;
                     }
                 }
 
@@ -1043,6 +1038,17 @@
                     });
 
                     // 予約完了モーダルを表示
+                    const modalTitle = successModal.querySelector('.modal-title');
+                    const modalText = successModal.querySelector('.modal-text');
+
+                    if (overlapWarning) {
+                        modalTitle.textContent = '予約完了（※重複あり）';
+                        modalText.innerHTML = 'ご予約ありがとうございます。<br><span style="color: var(--error-color);">※既に予約があります。ご注意ください。</span>';
+                    } else {
+                        modalTitle.textContent = '予約完了！';
+                        modalText.innerHTML = 'ご予約ありがとうございます。<br>お待ちしております！';
+                    }
+
                     successModal.classList.add('show');
                 }
             });
