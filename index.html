@@ -912,7 +912,7 @@
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
 
                     // GAS への送信 (URLが設定されている場合)
-                    const GAS_URL = ""; /* 【重要】ここにデプロイしたGoogle Apps ScriptのWebアプリURLを貼り付けてください */
+                    const GAS_URL = "https://script.google.com/macros/s/AKfycbwo5-ybRRkuMKJRrqTeOubvIFappm66g58rQc3VzdRuDSlw3AKtjL9eKFjruQfXWZUR/exec"; /* 【重要】ここにデプロイしたGoogle Apps ScriptのWebアプリURLを貼り付けてください */
                     if (GAS_URL) {
                         fetch(GAS_URL, {
                             method: "POST",
